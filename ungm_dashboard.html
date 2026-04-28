@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Axiom M&E — Multi-Source Tender Pipeline</title>
+<style>
+  :root {
+    --green-dark:#1a4731;--green-mid:#276749;--green-light:#3a8c63;--green-pale:#e8f5ee;
+    --accent:#f0a500;--red:#c0392b;--orange:#d35400;--grey-dark:#2c3e50;
+    --grey-mid:#7f8c8d;--grey-light:#ecf0f1;--white:#ffffff;
+    --ungm:#2471a3;--ted:#003399;--ts:#0a6840;--giz:#c80f0f;
+    --rw:#e84b2a;--da:#d35400;--aics:#006a4e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#f4f6f8;color:var(--grey-dark);}
+
+  /* HEADER */
+  header{background:linear-gradient(135deg,var(--green-dark) 0%,var(--green-mid) 100%);color:var(--white);
+    padding:16px 28px 12px;display:flex;align-items:center;justify-content:space-between;
+    box-shadow:0 2px 8px rgba(0,0,0,.2);}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .logo{width:40px;height:40px;background:var(--accent);border-radius:8px;display:flex;
+    align-items:center;justify-content:center;font-weight:900;font-size:17px;color:var(--green-dark);}
+  header h1{font-size:1.25rem;font-weight:700;}
+  header p{font-size:.73rem;opacity:.75;margin-top:1px;}
+  .date-badge{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
+    border-radius:20px;padding:5px 12px;font-size:.8rem;white-space:nowrap;}
+
+  /* STATS */
+  .stats-bar{display:flex;gap:8px;padding:12px 28px;background:var(--white);
+    border-bottom:1px solid #dde1e7;flex-wrap:wrap;}
+  .stat-card{flex:1;min-width:90px;padding:9px 12px;border-radius:8px;border-left:4px solid;
+    background:var(--grey-light);}
+  .stat-card .num{font-size:1.6rem;font-weight:800;line-height:1;}
+  .stat-card .label{font-size:.63rem;color:var(--grey-mid);text-transform:uppercase;letter-spacing:.4px;margin-top:2px;}
+  .sc-total{border-color:var(--green-mid);}.sc-total .num{color:var(--green-mid);}
+  .sc-ungm{border-color:var(--ungm);}.sc-ungm .num{color:var(--ungm);}
+  .sc-ted{border-color:var(--ted);}.sc-ted .num{color:var(--ted);}
+  .sc-ts{border-color:var(--ts);}.sc-ts .num{color:var(--ts);}
+  .sc-giz{border-color:var(--giz);}.sc-giz .num{color:var(--giz);}
+  .sc-rw{border-color:var(--rw);}.sc-rw .num{color:var(--rw);}
+  .sc-urgent{border-color:var(--red);}.sc-urgent .num{color:var(--red);}
+  .sc-open{border-color:var(--green-light);}.sc-open .num{color:var(--green-light);}
+
+  /* TABS */
+  .source-tabs{display:flex;gap:3px;padding:8px 28px 0;background:var(--white);
+    border-bottom:2px solid #dde1e7;overflow-x:auto;flex-wrap:nowrap;}
+  .tab-btn{padding:7px 14px;border:none;background:none;cursor:pointer;font-size:.81rem;
+    font-weight:600;color:var(--grey-mid);border-radius:6px 6px 0 0;
+    border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;
+    display:flex;align-items:center;gap:5px;transition:all .15s;}
+  .tab-btn:hover{background:var(--grey-light);color:var(--grey-dark);}
+  .tab-btn.active{color:var(--green-mid);border-bottom-color:var(--green-mid);background:#f9fafb;}
+  .tab-count{font-size:.64rem;padding:1px 5px;border-radius:9px;background:var(--grey-light);color:var(--grey-mid);}
+  .tab-btn.active .tab-count{background:var(--green-pale);color:var(--green-mid);}
+  .src-dot{width:7px;height:7px;border-radius:50%;}
+  /* M&E focus tab */
+  .tab-btn.me-tab{color:#7d2fa0;}
+  .tab-btn.me-tab.active{color:#7d2fa0;border-bottom-color:#7d2fa0;background:#faf5ff;}
+  .tab-btn.me-tab .tab-count{background:#f3e8ff;}
+  .tab-btn.me-tab.active .tab-count{background:#e9d5ff;color:#7d2fa0;}
+
+  /* FILTERS */
+  .filters{display:flex;gap:7px;padding:10px 28px;background:var(--white);
+    border-bottom:1px solid #dde1e7;flex-wrap:wrap;align-items:center;}
+  .filter-group{display:flex;align-items:center;gap:5px;}
+  .filters label{font-size:.69rem;color:var(--grey-mid);text-transform:uppercase;letter-spacing:.4px;}
+  .filters input,.filters select{padding:5px 8px;border:1px solid #cdd3da;border-radius:5px;
+    font-size:.8rem;color:var(--grey-dark);background:#fafbfc;outline:none;}
+  .filters input{min-width:170px;}
+  .filters select{min-width:120px;}
+  .filters input:focus,.filters select:focus{border-color:var(--green-light);}
+  .btn-reset{margin-left:auto;padding:5px 12px;background:var(--grey-light);
+    border:1px solid #cdd3da;border-radius:5px;font-size:.78rem;cursor:pointer;color:var(--grey-mid);}
+  .btn-reset:hover{background:#dde1e7;color:var(--grey-dark);}
+
+  .results-bar{padding:6px 28px;font-size:.76rem;color:var(--grey-mid);background:#f4f6f8;}
+  #count{font-weight:700;color:var(--grey-dark);}
+
+  /* NOTICE BARS */
+  .notice-bar{margin:8px 28px 0;padding:7px 12px;border-radius:6px;font-size:.76rem;
+    display:none;align-items:center;gap:7px;}
+  .notice-bar.warn{background:#fffbea;border:1px solid #ffd080;color:#7d5a00;}
+  .notice-bar.info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;}
+
+  /* CARDS */
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:11px;padding:14px 28px 28px;}
+  .card{background:var(--white);border-radius:9px;border:1px solid #dde1e7;overflow:hidden;
+    display:flex;flex-direction:column;transition:box-shadow .15s,transform .1s;}
+  .card:hover{box-shadow:0 4px 16px rgba(0,0,0,.1);transform:translateY(-1px);}
+  .card.is-expired{opacity:.55;}
+
+  .card-header{padding:10px 12px 8px;display:flex;align-items:flex-start;
+    justify-content:space-between;gap:8px;border-bottom:1px solid #f0f2f4;}
+  .card-title{font-size:.84rem;font-weight:600;line-height:1.35;flex:1;}
+  .card-title a{color:var(--grey-dark);text-decoration:none;}
+  .card-title a:hover{color:var(--green-mid);text-decoration:underline;}
+
+  /* M&E keyword highlight in titles */
+  .kw-hl{background:#fef08a;border-radius:2px;padding:0 2px;color:#713f12;font-style:normal;}
+
+  .urg-pill{flex-shrink:0;padding:3px 8px;border-radius:20px;font-size:.63rem;
+    font-weight:700;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;}
+  .urg-expired{background:#eaecee;color:var(--grey-mid);}
+  .urg-today{background:#fdecea;color:var(--red);}
+  .urg-critical{background:#fdecea;color:var(--red);}
+  .urg-urgent{background:#fef3e2;color:var(--orange);}
+  .urg-open{background:var(--green-pale);color:var(--green-mid);}
+  .urg-none{background:#f0f2f4;color:var(--grey-mid);}
+
+  .card-body{padding:8px 12px;display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;flex:1;}
+  .meta .k{color:var(--grey-mid);font-size:.64rem;text-transform:uppercase;letter-spacing:.4px;display:block;}
+  .meta .v{font-weight:600;font-size:.75rem;margin-top:1px;}
+  .org-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:.67rem;font-weight:700;color:var(--white);}
+  .org-UNDP{background:#2980b9;}.org-UNICEF{background:#1a6fa8;}.org-WHO{background:#c0392b;}
+  .org-IOM{background:#6c3483;}.org-ILO{background:#d35400;}.org-UNOPS{background:#1e8449;}
+  .org-UNIDO{background:#117a65;}.org-IAEA{background:#2e4057;}.org-UNWomen{background:#9b2e89;}
+  .org-GIZ{background:#c80f0f;}.org-EIB{background:#003399;}.org-Enabel{background:#e84949;}
+  .org-ARC{background:#0f7173;}.org-default{background:var(--grey-mid);}
+  .type-tag{font-size:.64rem;color:var(--grey-mid);background:var(--grey-light);border-radius:3px;padding:1px 5px;display:inline-block;margin-top:1px;}
+  .kw-chip{font-size:.62rem;padding:2px 6px;border-radius:10px;background:#eaf4ee;color:var(--green-mid);font-weight:600;text-transform:capitalize;}
+  /* M&E relevance badge */
+  .me-badge{font-size:.6rem;padding:1px 6px;border-radius:3px;font-weight:700;margin-left:4px;}
+  .me-high{background:#f3e8ff;color:#7d2fa0;}
+  .me-med{background:#eff6ff;color:#1e40af;}
+
+  .card-footer{padding:6px 12px;border-top:1px solid #f0f2f4;display:flex;align-items:center;
+    justify-content:space-between;background:#fafbfc;gap:6px;flex-wrap:wrap;}
+  .deadline-text{font-size:.71rem;color:var(--grey-mid);}
+  .deadline-text strong{color:var(--grey-dark);}
+  .btn-link{padding:3px 10px;background:var(--green-mid);color:var(--white);border-radius:5px;
+    font-size:.71rem;font-weight:600;text-decoration:none;transition:background .15s;flex-shrink:0;}
+  .btn-link:hover{background:var(--green-dark);}
+  .src-badge{font-size:.6rem;font-weight:700;padding:1px 6px;border-radius:3px;color:var(--white);}
+  .src-UNGM{background:var(--ungm);}.src-TED{background:var(--ted);}
+  .src-TenderSoko{background:var(--ts);}.src-GIZ{background:var(--giz);}
+  .src-ReliefWeb{background:var(--rw);}
+  .login-note{font-size:.63rem;color:var(--grey-mid);font-style:italic;}
+
+  /* Locked panels */
+  .locked-panel{margin:14px 28px 28px;background:var(--white);border-radius:10px;
+    padding:28px;text-align:center;border:2px dashed;}
+  .locked-panel.da-panel{border-color:#ffd080;}
+  .locked-panel.aics-panel{border-color:#86efac;}
+  .panel-icon{width:50px;height:50px;border-radius:50%;margin:0 auto 14px;
+    display:flex;align-items:center;justify-content:center;font-size:22px;}
+  .da-panel .panel-icon{background:#fff3cd;}
+  .aics-panel .panel-icon{background:#dcfce7;}
+  .locked-panel h3{font-size:1rem;color:var(--grey-dark);margin-bottom:7px;}
+  .locked-panel p{font-size:.82rem;color:var(--grey-mid);max-width:500px;margin:0 auto 18px;line-height:1.6;}
+  .panel-btn{display:inline-block;padding:9px 22px;color:var(--white);border-radius:6px;
+    font-size:.85rem;font-weight:600;text-decoration:none;transition:background .15s;margin:0 6px 8px;}
+  .da-btn{background:var(--da-c);}  .da-btn:hover{background:#b7490a;}
+  .aics-btn{background:var(--aics);} .aics-btn:hover{background:#00533c;}
+
+  #no-results{display:none;text-align:center;padding:50px 28px;color:var(--grey-mid);}
+
+  @media(max-width:640px){
+    header{flex-direction:column;align-items:flex-start;gap:9px;}
+    .stats-bar,.filters,.cards,.notice-bar,.locked-panel{padding-left:14px;padding-right:14px;}
+    .cards{grid-template-columns:1fr;}
+    .filters{flex-direction:column;align-items:flex-start;}
+    .btn-reset{margin-left:0;}
+    .source-tabs{padding-left:14px;}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">A</div>
+    <div>
+      <h1>Axiom M&amp;E — Multi-Source Tender Pipeline</h1>
+      <p>UNGM &nbsp;·&nbsp; TED/EU &nbsp;·&nbsp; GIZ &nbsp;·&nbsp; ReliefWeb &nbsp;·&nbsp; TenderSoko &nbsp;·&nbsp; AICS &nbsp;·&nbsp; DevelopmentAid</p>
+    </div>
+  </div>
+  <div class="date-badge" id="today-badge"></div>
+</header>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat-card sc-total"><div class="num" id="st-total">0</div><div class="label">All Tenders</div></div>
+  <div class="stat-card sc-ungm"><div class="num">15</div><div class="label">UNGM</div></div>
+  <div class="stat-card sc-ted"><div class="num">17</div><div class="label">TED·EU</div></div>
+  <div class="stat-card sc-giz"><div class="num">9</div><div class="label">GIZ Direct</div></div>
+  <div class="stat-card sc-rw"><div class="num">8</div><div class="label">ReliefWeb</div></div>
+  <div class="stat-card sc-ts"><div class="num">10</div><div class="label">TenderSoko</div></div>
+  <div class="stat-card sc-urgent"><div class="num" id="st-urgent">0</div><div class="label">Closing ≤5d</div></div>
+  <div class="stat-card sc-open"><div class="num" id="st-open">0</div><div class="label">Open &gt;5d</div></div>
+</div>
+
+<!-- TABS -->
+<div class="source-tabs">
+  <button class="tab-btn active" onclick="setTab('all',this)"><span>All</span><span class="tab-count" id="tc-all">59</span></button>
+  <button class="tab-btn me-tab" onclick="setTab('ME',this)"><span>⭐ M&amp;E Focus</span><span class="tab-count" id="tc-ME">0</span></button>
+  <button class="tab-btn" onclick="setTab('UNGM',this)"><span class="src-dot" style="background:var(--ungm)"></span>UNGM<span class="tab-count">15</span></button>
+  <button class="tab-btn" onclick="setTab('TED',this)"><span class="src-dot" style="background:var(--ted)"></span>TED·EU<span class="tab-count">17</span></button>
+  <button class="tab-btn" onclick="setTab('GIZ',this)"><span class="src-dot" style="background:var(--giz)"></span>GIZ Direct<span class="tab-count">9</span></button>
+  <button class="tab-btn" onclick="setTab('ReliefWeb',this)"><span class="src-dot" style="background:var(--rw)"></span>ReliefWeb<span class="tab-count">8</span></button>
+  <button class="tab-btn" onclick="setTab('TenderSoko',this)"><span class="src-dot" style="background:var(--ts)"></span>TenderSoko<span class="tab-count">10</span></button>
+  <button class="tab-btn" onclick="setTab('AICS',this)"><span class="src-dot" style="background:var(--aics)"></span>AICS</button>
+  <button class="tab-btn" onclick="setTab('DevelopmentAid',this)"><span class="src-dot" style="background:var(--da-c)"></span>DevelopmentAid</button>
+</div>
+
+<!-- FILTERS -->
+<div class="filters" id="filter-bar">
+  <div class="filter-group"><label>Search</label><input type="text" id="f-search" placeholder="Title, org, reference, country…"></div>
+  <div class="filter-group"><label>Country</label><select id="f-country"><option value="">All</option></select></div>
+  <div class="filter-group"><label>Keyword</label><select id="f-keyword"><option value="">All</option></select></div>
+  <div class="filter-group"><label>Status</label>
+    <select id="f-status">
+      <option value="">All</option>
+      <option value="today">Due Today</option>
+      <option value="critical">Critical (≤2d)</option>
+      <option value="urgent">Urgent (3–5d)</option>
+      <option value="open">Open (&gt;5d)</option>
+      <option value="none">No Deadline</option>
+      <option value="expired">Expired</option>
+    </select>
+  </div>
+  <button class="btn-reset" onclick="resetFilters()">Clear</button>
+</div>
+<div class="results-bar">Showing <span id="count">0</span> of <span id="total-count">0</span> tenders</div>
+
+<!-- NOTICE BARS -->
+<div class="notice-bar warn" id="ts-notice">⚠️ TenderSoko: page 1 of 556 open Kenya tenders (live scrape 28 Apr 2026). Org names hidden behind login. <a href="https://tendersoko.com/tenders" target="_blank">Browse full list ↗</a></div>
+<div class="notice-bar info" id="rw-notice">ℹ️ ReliefWeb: showing M&E-relevant consultancy tenders scraped 28 Apr 2026. Mix of firm tenders and individual consultancy. <a href="https://reliefweb.int/jobs?type%5B%5D=0&search=evaluation+monitoring+assessment" target="_blank">Search ReliefWeb ↗</a></div>
+
+<div class="cards" id="cards"></div>
+<div id="no-results">No tenders match the current filters.</div>
+
+<!-- AICS PANEL -->
+<div class="locked-panel aics-panel" id="aics-panel" style="display:none">
+  <div class="panel-icon">🇮🇹</div>
+  <h3>AICS — Agenzia Italiana per la Cooperazione allo Sviluppo</h3>
+  <p>AICS publishes evaluation, monitoring and consultancy tenders for Italian-funded development cooperation projects across Africa (Somalia, Ethiopia, Kenya, DRC, Sudan). Opportunities are issued via their local offices in Nairobi, Addis Ababa, Mogadishu, and Khartoum, published in the Italian Official Gazette (Gazzetta Ufficiale) and via TED for EU-co-funded projects. Their thematic calls (bandi tematici) target NGOs and civil society. No structured public tender portal is available; monitor their news and TED publications.</p>
+  <a href="https://www.aics.gov.it/fields-of-action/efficacia-e-valutazione-delle-iniziative-di-cooperazione/?lang=en" target="_blank" rel="noopener" class="panel-btn aics-btn">Effectiveness &amp; Evaluation page ↗</a>
+  <a href="https://www.aics.gov.it/opportunities/?lang=en" target="_blank" rel="noopener" class="panel-btn aics-btn">AICS Opportunities ↗</a>
+  <a href="https://ted.europa.eu/en/search/result?scope=1&q=AICS" target="_blank" rel="noopener" class="panel-btn aics-btn">AICS on TED ↗</a>
+</div>
+
+<!-- DEVELOPMENTAID PANEL -->
+<div class="locked-panel da-panel" id="da-panel" style="display:none">
+  <div class="panel-icon">🔒</div>
+  <h3>DevelopmentAid — Subscription Required</h3>
+  <p>DevelopmentAid aggregates M&E, evaluation and consultancy tenders from UN agencies, the EU, bilateral donors and NGOs globally, including USAID, DFID/FCDO, and AfDB streams not covered by the other sources in this dashboard. Full listings require a paid membership.</p>
+  <a href="https://developmentaid.org/tenders/list" target="_blank" rel="noopener" class="panel-btn da-btn">Browse DevelopmentAid Tenders ↗</a>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════════════════
+const TODAY = new Date("2026-04-28T12:00:00Z");
+
+// M&E KEYWORDS for highlighting and relevance scoring
+const ME_HIGH_KW = ['evaluat','assessment','monitoring','m&e','meal','baseline','endline','midline','survey','monitorage','valutation','enquête','évaluation','suivi','review','diagnostic','recherche'];
+const ME_MED_KW  = ['consultancy','consultanc','research','technical assistance','analysis','analytic','planning','strategic'];
+
+// ── UNGM (15) ──────────────────────────────────────────────────────────
+const UNGM=[
+  {title:"Provision of AI-Enabled Early Warning, Operational Risk Monitoring, and Analytics",deadline:"2026-04-26T08:03:00-04:00",published:"2026-04-09",org:"UNDP",type:"RFP",ref:"UNDP-SOM-00619,1",country:"Somalia",url:"https://www.ungm.org/Public/Notice/297294",keyword:"monitoring",source:"UNGM"},
+  {title:"Gamma Dose Rate Monitoring System for Yemen",deadline:"2026-04-30T17:00:00+01:00",published:"2026-03-19",org:"IAEA",type:"RFQ",ref:"666135-LB",country:"Yemen",url:"https://www.ungm.org/Public/Notice/294536",keyword:"monitoring",source:"UNGM"},
+  {title:"Independent Endline Evaluation of the Xaldoon (Solutions-Oriented) Project",deadline:"2026-05-02T12:30:00+00:00",published:"2026-04-22",org:"IOM",type:"RFQ",ref:"30000024638",country:"Somalia",url:"https://www.ungm.org/Public/Notice/298598",keyword:"evaluation",source:"UNGM"},
+  {title:"Cost-effectiveness and Economic Evaluation Study of Integrated Breast and Cervical Cancer Services in Africa",deadline:"2026-04-29T23:59:00+01:00",published:"2026-04-08",org:"WHO",type:"RFP",ref:"AF/GMC/PSS/P/0009016",country:"Congo",url:"https://www.ungm.org/Public/Notice/297153",keyword:"evaluation",source:"UNGM"},
+  {title:"Consultancy for the Review of Health Information Systems Platforms at WHO Regional Office for Africa",deadline:"2026-05-07T23:59:00+01:00",published:"2026-04-23",org:"WHO",type:"RFP",ref:"AF/GMC/PSS/P/0009058",country:"Congo",url:"https://www.ungm.org/Public/Notice/298750",keyword:"consultancy",source:"UNGM"},
+  {title:"Institutional Consultancy to Strengthen a Market-Based Sanitation Ecosystem — MSME & Sanitation Finance",deadline:"2026-05-07T23:59:00+03:00",published:"2026-04-17",org:"UNICEF",type:"RFP",ref:"LRPS NO 2026-9203523",country:"Kenya",url:"https://www.ungm.org/Public/Notice/298103",keyword:"consultancy",source:"UNGM"},
+  {title:"Consultancy: Integrated Demand Creation Strategy for Affordable Nutritious Foods",deadline:"2026-05-06T23:59:00+03:00",published:"2026-04-15",org:"UNICEF",type:"RFP",ref:"LRFP 9203394-2026",country:"Kenya",url:"https://www.ungm.org/Public/Notice/297850",keyword:"consultancy",source:"UNGM"},
+  {title:"Consultancy Firm to Formulate the South Sudan Nationally Determined Contribution",deadline:"2026-04-24T10:00:00-04:00",published:"2026-04-10",org:"UNDP",type:"RFP",ref:"UNDP-SSD-00687",country:"South Sudan",url:"https://www.ungm.org/Public/Notice/297405",keyword:"consultancy",source:"UNGM"},
+  {title:"RFP Consultancy Firm — Legal Advice, Institutional and Fund Structuring",deadline:"2026-04-28T10:00:00-04:00",published:"2026-04-09",org:"UNDP",type:"RFP",ref:"UNDP-ETH-00697",country:"Ethiopia",url:"https://www.ungm.org/Public/Notice/297240",keyword:"consultancy",source:"UNGM"},
+  {title:"Consultancy: Social and Behaviour Change Communication — Back to Learning Campaign, Ethiopia",deadline:"2026-04-27T00:00:00+03:00",published:"2026-04-06",org:"UNICEF",type:"RFP",ref:"LRFP-9203256-2026",country:"Ethiopia",url:"https://www.ungm.org/Public/Notice/296884",keyword:"consultancy",source:"UNGM"},
+  {title:"Facilitation Support and Financial Administration for LFS 2026 — Joint Survey Design",deadline:"2026-05-04T17:00:00+03:00",published:"2026-04-15",org:"ILO",type:"RFP",ref:"LFS 2026 IA-1",country:"Iraq",url:"https://www.ungm.org/Public/Notice/297853",keyword:"survey",source:"UNGM"},
+  {title:"Re-Advertised Assessment on Gender Statistics Production, Analysis and Dissemination",deadline:"2026-05-08T03:00:00-04:00",published:"2026-04-23",org:"UN-Women",type:"RFP",ref:"UNW-ETH-2026-00007-2",country:"Ethiopia",url:"https://www.ungm.org/Public/Notice/298752",keyword:"assessment",source:"UNGM"},
+  {title:"Rapid Sector Assessment and Target Selection for Creative Industry Development in Turkana",deadline:"2026-04-28T17:00:00+02:00",published:"2026-04-14",org:"UNIDO",type:"RFQ",ref:"7000008444",country:"Kenya",url:"https://www.ungm.org/Public/Notice/297687",keyword:"assessment",source:"UNGM"},
+  {title:"Impact Assessment of Capacity Building Program for Local Institutions in Yemen (YIUSEP II / YHCEP / YELCP)",deadline:"2026-04-28T09:00:00+00:00",published:"2026-04-09",org:"UNOPS",type:"RFQ",ref:"RFQ/2026/62266",country:"Yemen",url:"https://www.ungm.org/Public/Notice/297263",keyword:"assessment",source:"UNGM"},
+  {title:"Call for External Collaborator — Rapid Situational Analysis for Iraq",deadline:"2026-05-06T11:00:00+02:00",published:"2026-04-22",org:"ILO",type:"Call for Consultants",ref:"rfx_6026_ROAS",country:"Iraq",url:"https://www.ungm.org/Public/Notice/298594",keyword:"analysis",source:"UNGM"}
+];
+
+// ── TED/EU (17) ────────────────────────────────────────────────────────
+const TED=[
+  {title:"Fund Manager for the Fund for African-Danish Relations through Mutual Exchange of Culture and Arts (ARCH)",deadline:"",published:"2026-01-08",org:"Ministry of Foreign Affairs of Denmark",type:"Contract Notice",ref:"9751-2026",country:"Multi-Africa",url:"https://ted.europa.eu/en/notice/9751-2026",keyword:"fund management",source:"TED"},
+  {title:"Réalisation des Études Diagnostiques des Filières Agricoles et Forestières — Territoires KOPEKOBA",deadline:"",published:"2026-01-15",org:"Expertise France",type:"Contract Notice",ref:"28255-2026",country:"DR Congo",url:"https://ted.europa.eu/en/notice/28255-2026",keyword:"consultancy",source:"TED"},
+  {title:"Provision of an Airborne Geophysical Survey of the Rift Valley Basin in Ethiopia",deadline:"",published:"2026-02-19",org:"Aarhus Universitet",type:"Contract Notice",ref:"117467-2026",country:"Ethiopia",url:"https://ted.europa.eu/en/notice/117467-2026",keyword:"survey",source:"TED"},
+  {title:"Security Services in Somalia (Turvallisuuspalvelut Somaliassa)",deadline:"2026-03-09T10:00:00Z",published:"2026-02-27",org:"Finnish Immigration Service",type:"Contract Notice",ref:"141280-2026",country:"Somalia",url:"https://ted.europa.eu/en/notice/141280-2026",keyword:"services",source:"TED"},
+  {title:"Agency/Firm for Audiovisual Production and Photography — DRC (Enabel)",deadline:"",published:"2026-03-18",org:"Enabel",type:"Contract Notice",ref:"187956-2026",country:"DR Congo",url:"https://ted.europa.eu/en/notice/187956-2026",keyword:"media",source:"TED"},
+  {title:"Provision of International and National Consultants to Support FEC in Economic Development — DRC",deadline:"2026-03-30T23:59:59+02:00",published:"2026-03-09",org:"GIZ",type:"Contract Notice",ref:"161669-2026",country:"DR Congo",url:"https://ted.europa.eu/en/notice/161669-2026",keyword:"consultancy",source:"TED"},
+  {title:"Service Contract for Printing and Reproduction Services — DRC",deadline:"",published:"2026-04-14",org:"Enabel",type:"Contract Notice",ref:"252619-2026",country:"DR Congo",url:"https://ted.europa.eu/en/notice/252619-2026",keyword:"services",source:"TED"},
+  {title:"Équipements de Maintenance Prédictive — DRC",deadline:"",published:"2026-03-20",org:"Expertise France",type:"Contract Notice",ref:"193019-2026",country:"DR Congo",url:"https://ted.europa.eu/en/notice/193019-2026",keyword:"equipment",source:"TED"},
+  {title:"Fourniture et Mise en Service d'un Caisson Hyperbare — Iraq",deadline:"",published:"2026-03-20",org:"Économat des Armées",type:"Contract Notice",ref:"194783-2026",country:"Iraq",url:"https://ted.europa.eu/en/notice/194783-2026",keyword:"equipment",source:"TED"},
+  {title:"Transforming Agribusinesses to Improve Employment in the Kurdistan Region of Iraq",deadline:"2026-04-24T23:59:59+02:00",published:"2026-03-27",org:"GIZ",type:"Contract Notice",ref:"214507-2026",country:"Iraq",url:"https://ted.europa.eu/en/notice/214507-2026",keyword:"consultancy",source:"TED"},
+  {title:"Technical Assistance to Support Rural Finance Intermediation Programme Phase III (RUFIP III) — Ethiopia",deadline:"2026-05-04T16:00:00Z",published:"2026-03-27",org:"European Investment Bank",type:"Contract Notice",ref:"211899-2026",country:"Ethiopia",url:"https://ted.europa.eu/en/notice/211899-2026",keyword:"technical assistance",source:"TED"},
+  {title:"Engineering and Architectural Services — New Italian Embassy Compound, Nairobi Kenya",deadline:"2026-04-20T18:00:00+02:00",published:"2026-03-27",org:"Italian Embassy Nairobi",type:"Contract Notice",ref:"214203-2026",country:"Kenya",url:"https://ted.europa.eu/en/notice/214203-2026",keyword:"construction",source:"TED"},
+  {title:"IT Equipment Framework Contract — DRC",deadline:"",published:"2026-04-03",org:"Enabel",type:"Contract Notice",ref:"232366-2026",country:"DR Congo",url:"https://ted.europa.eu/en/notice/232366-2026",keyword:"IT",source:"TED"},
+  {title:"Strategic Environmental and Social Assessment (SESA) of the Oil and Gas Sector — DRC",deadline:"2026-05-08T23:59:59+02:00",published:"2026-04-17",org:"GIZ",type:"Contract Notice",ref:"263113-2026",country:"DR Congo",url:"https://ted.europa.eu/en/notice/263113-2026",keyword:"assessment",source:"TED"},
+  {title:"Comprehensive Support Services for Development Cooperation Programme — Central Africa",deadline:"",published:"2026-04-21",org:"Bank Gospodarstwa Krajowego",type:"Contract Notice",ref:"272861-2026",country:"DRC / Congo / Cameroon / Gabon",url:"https://ted.europa.eu/en/notice/272861-2026",keyword:"development cooperation",source:"TED"},
+  {title:"Short-Term Expert Pools for Tax & Customs Expertise — Ethiopia",deadline:"2026-05-13T23:59:59+02:00",published:"2026-04-23",org:"GIZ",type:"Contract Notice",ref:"277164-2026",country:"Ethiopia",url:"https://ted.europa.eu/en/notice/277164-2026",keyword:"consultancy",source:"TED"},
+  {title:"TUM NDB: Landscape and Outdoor Works — DRC (Technische Universität München)",deadline:"2026-04-11T23:59:59+02:00",published:"2026-03-26",org:"Technische Universität München",type:"Contract Notice",ref:"210579-2026",country:"DR Congo",url:"https://ted.europa.eu/en/notice/210579-2026",keyword:"construction",source:"TED"}
+];
+
+// ── GIZ DIRECT (9) — ausschreibungen.giz.de live scrape 28 Apr 2026 ───
+const GIZ_DATA=[
+  {title:"Delivering Expert Services on Marine Spatial Planning in South Africa, Namibia and the Benguela Current Large Marine Ecosystem",deadline:"2026-05-19T23:59:00+02:00",published:"2026-04-28",org:"GIZ",type:"UVgO (Service Contract)",ref:"10020340",country:"South Africa / Namibia",url:"https://ausschreibungen.giz.de/Satellite/public/company/projectForwarding.do?pid=50507",keyword:"technical assistance",source:"GIZ"},
+  {title:"Appui à la Finalisation et à l'Opérationnalisation d'une Stratégie de Communication Intégrée de la Fondation Panzi — DRC",deadline:"2026-05-18T23:59:00+02:00",published:"2026-04-27",org:"GIZ",type:"UVgO (Service Contract)",ref:"10015937",country:"DR Congo",url:"https://ausschreibungen.giz.de/Satellite/public/company/projectForwarding.do?pid=50490",keyword:"consultancy",source:"GIZ"},
+  {title:"Strengthening Basic Services and Cross-Border Resilience in Border Areas of Senegal, Mali and Guinea",deadline:"2026-05-27T23:59:00+02:00",published:"2026-04-26",org:"GIZ",type:"VgV (Service Contract)",ref:"10001029",country:"Senegal / Mali / Guinea",url:"https://ausschreibungen.giz.de/Satellite/public/company/projectForwarding.do?pid=50395",keyword:"development cooperation",source:"GIZ"},
+  {title:"Diagnostic, Élaboration de Business Plans et Plans d'Accompagnement Entrepreneurial — Province d'Al Haouz, Morocco",deadline:"2026-05-15T23:59:00+02:00",published:"2026-04-23",org:"GIZ",type:"UVgO (Service Contract)",ref:"10015685",country:"Morocco",url:"https://ausschreibungen.giz.de/Satellite/public/company/projectForwarding.do?pid=50458",keyword:"assessment",source:"GIZ"},
+  {title:"Development of Local Land Use and Sustainable Development Plans (LLUSDP) in Four Target Municipalities — Cameroon",deadline:"2026-05-22T23:59:00+02:00",published:"2026-04-23",org:"GIZ",type:"VgV (Service Contract)",ref:"10012414",country:"Cameroon",url:"https://ausschreibungen.giz.de/Satellite/public/company/projectForwarding.do?pid=50424",keyword:"planning",source:"GIZ"},
+  {title:"Waste Sorting Centers — Libya",deadline:"2026-05-27T23:59:00+02:00",published:"2026-04-26",org:"GIZ",type:"VgV (Service Contract)",ref:"GIZ-LIB-2026",country:"Libya",url:"https://ausschreibungen.giz.de/Satellite/public/company/projectForwarding.do?pid=50466",keyword:"services",source:"GIZ"},
+  {title:"Development of an Initial Methodology Framework for Climate-Proofing Laws and Policies — Kosovo",deadline:"2026-05-20T23:59:00+02:00",published:"2026-04-28",org:"GIZ",type:"UVgO (Service Contract)",ref:"10015980",country:"Kosovo",url:"https://ausschreibungen.giz.de/Satellite/public/company/projectForwarding.do?pid=50504",keyword:"methodology",source:"GIZ"},
+  {title:"Technical and Advisory Services for Developing and Piloting an Interoperable Digital Wallet based Cross-Border e-Service",deadline:"2026-05-22T23:59:00+02:00",published:"2026-04-21",org:"GIZ",type:"VgV (Service Contract)",ref:"81322924",country:"Multi-Country",url:"https://ausschreibungen.giz.de/Satellite/public/company/projectForwarding.do?pid=50401",keyword:"technical assistance",source:"GIZ"},
+  {title:"Short-Term Expert Pools for Tax & Customs Expertise — Ethiopia (GIZ Direct)",deadline:"2026-05-22T23:59:00+02:00",published:"2026-04-23",org:"GIZ",type:"VgV/TNW (Pre-qualification)",ref:"10002336",country:"Ethiopia",url:"https://ausschreibungen.giz.de/Satellite/public/company/projectForwarding.do?pid=50432",keyword:"consultancy",source:"GIZ"}
+];
+
+// ── RELIEFWEB (8) — RSS scrape 28 Apr 2026 ────────────────────────────
+const RELIEFWEB=[
+  {title:"Consultancy to Develop Practical Legal Guides for Water Sharing Agreements — BUPUSACOM (Zimbabwe)",deadline:"2026-05-15T23:59:00+00:00",published:"2026-04-28",org:"IUCN",type:"RFP (Firm Tender)",ref:"IUCN-26-04-P03944-1",country:"Zimbabwe",url:"https://reliefweb.int/job/4209639/consultancy-develop-practcial-legal-guides-water-sharing-agreements-buzi-pungwe-and-save-watercourses-commission-bupusacom",keyword:"consultancy",source:"ReliefWeb"},
+  {title:"Strategic Plan Review and Extension — HEKS/EPER Uganda and South Sudan",deadline:"2026-05-12T23:59:00+00:00",published:"2026-04-28",org:"HEKS/EPER",type:"Consultancy (Firm)",ref:"RW-4209628",country:"Uganda / South Sudan",url:"https://reliefweb.int/job/4209628/review-and-extension-hekseper-strategic-plan-uganda-and-south-sudan",keyword:"review",source:"ReliefWeb"},
+  {title:"Appel à Propositions: Monitorage Indépendant d'une Enquête de Couverture — Supplémentation Vitamine A (Helen Keller)",deadline:"2026-05-10T23:59:00+00:00",published:"2026-04-28",org:"Helen Keller International",type:"Call for Proposals",ref:"RW-4209589",country:"Madagascar",url:"https://reliefweb.int/job/4209589/appel-propositions-pour-la-mise-en-oeuvre-du-monitorage-independant-dune-enquete-de-couverture-de-la-supplementation-en-vitamine-soutenue-par-hele",keyword:"monitoring",source:"ReliefWeb"},
+  {title:"Consultancy on Farmer Training Curriculum Development — Uganda",deadline:"2026-05-12T23:59:00+00:00",published:"2026-04-28",org:"Danish Refugee Council",type:"Consultancy (Firm)",ref:"RW-4209655",country:"Uganda",url:"https://reliefweb.int/job/4209655/consultancy-farmer-training-curriculum",keyword:"consultancy",source:"ReliefWeb"},
+  {title:"RFP — Evaluation of MSF Transformational Investment Capacity (TIC) Programme",deadline:"2026-05-08T23:59:00+00:00",published:"2026-04-27",org:"Médecins Sans Frontières",type:"RFP (Firm Tender)",ref:"RW-4209482",country:"Multi-Country",url:"https://reliefweb.int/job/4209482/rfp-evaluation-msf-transformational-investment-capacity-tic",keyword:"evaluation",source:"ReliefWeb"},
+  {title:"Project Evaluator — ICTJ Ethiopia Programme",deadline:"2026-05-15T23:59:00+00:00",published:"2026-04-27",org:"International Center for Transitional Justice",type:"Consultancy",ref:"RW-4209261",country:"Ethiopia",url:"https://reliefweb.int/job/4209261/project-evaluator-ictj-ethiopia-program",keyword:"evaluation",source:"ReliefWeb"},
+  {title:"Implementation Research Consultancy — Violence Against Children in and around Schools (VACiS)",deadline:"2026-05-08T23:59:00+00:00",published:"2026-04-27",org:"ICS",type:"Research Consultancy",ref:"RW-4209457",country:"Multi-Country",url:"https://reliefweb.int/job/4209457/implementation-research-consultancy-violence-against-children-and-",keyword:"research",source:"ReliefWeb"},
+  {title:"Communications and Content Production Consultancy — Tana River & Samburu Counties, Kenya",deadline:"2026-04-30T17:00:00+03:00",published:"2026-04-28",org:"ACTED",type:"Consultancy (Firm)",ref:"RW-4209074",country:"Kenya",url:"https://reliefweb.int/job/4209074/communications-and-content-production-consultancy-tana-river-samburu-counties",keyword:"consultancy",source:"ReliefWeb"}
+];
+
+// ── TENDERSOKO (10) ───────────────────────────────────────────────────
+const TENDERSOKO=[
+  {title:"Development of a Parametric Insurance Training Curriculum",deadline:"2026-06-01T23:59:00+03:00",published:"2026-04-28",org:"African Risk Capacity Limited",type:"Consultancy",ref:"TS-230666",country:"Kenya",url:"https://tendersoko.com/tender/development-of-a-parametric-insurance-training-curriculum-230666",keyword:"training",source:"TenderSoko",loginRequired:false},
+  {title:"Design and Implementation of an Open-Source Platform for Climate Risk Data",deadline:"2026-06-01T23:59:00+03:00",published:"2026-04-28",org:"African Risk Capacity Limited",type:"Consultancy",ref:"TS-230665",country:"Kenya",url:"https://tendersoko.com/tender/design-and-implementation-of-an-open-source-platform-for-climate-risk-data-230665",keyword:"consultancy",source:"TenderSoko",loginRequired:false},
+  {title:"Prequalification of Licensed Capital Markets Advisors for PPP Transactions",deadline:"2026-05-20T17:00:00+03:00",published:"2026-04-28",org:"(Sign in to view)",type:"Parastatal / Services",ref:"TS-230875",country:"Kenya",url:"https://tendersoko.com/tender/prequalification-of-licensed-capital-markets-advisors-for-ppp-transactions-invol-230875",keyword:"finance",source:"TenderSoko",loginRequired:true},
+  {title:"Implementation of Water Supply Works",deadline:"2026-05-20T17:00:00+03:00",published:"2026-04-28",org:"(Sign in to view)",type:"Parastatal / Services",ref:"TS-230873",country:"Kenya",url:"https://tendersoko.com/tender/implementation-of-water-supply-works-230873",keyword:"infrastructure",source:"TenderSoko",loginRequired:true},
+  {title:"Consultancy Services for the Implementation of Communication Media and Brand Strategy",deadline:"2026-06-15T17:00:00+03:00",published:"2026-04-28",org:"(Sign in to view)",type:"Parastatal / Services",ref:"TS-230871",country:"Kenya",url:"https://tendersoko.com/tender/consultancy-services-for-the-implementation-of-communication-media-and-brand-str-230871",keyword:"consultancy",source:"TenderSoko",loginRequired:true},
+  {title:"Provision of Comprehensive Staff Medical Insurance Cover",deadline:"2026-05-19T17:00:00+03:00",published:"2026-04-28",org:"(Sign in to view)",type:"Parastatal / Services",ref:"TS-230867",country:"Kenya",url:"https://tendersoko.com/tender/provision-of-comprehensive-staff-medical-insurance-cover-230867",keyword:"services",source:"TenderSoko",loginRequired:true},
+  {title:"Supply and Delivery of Sanitary Towels",deadline:"2026-05-08T17:00:00+03:00",published:"2026-04-28",org:"(Sign in to view — NGO)",type:"NGO / Supplies",ref:"TS-230862",country:"Kenya",url:"https://tendersoko.com/tender/supply-and-delivery-of-sanitary-towels-230862",keyword:"supplies",source:"TenderSoko",loginRequired:true},
+  {title:"Provision of Ground Handling Services",deadline:"2026-05-14T17:00:00+03:00",published:"2026-04-28",org:"(Sign in to view)",type:"Parastatal / Services",ref:"TS-230859",country:"Kenya",url:"https://tendersoko.com/tender/provision-of-ground-handling-services-230859",keyword:"services",source:"TenderSoko",loginRequired:true},
+  {title:"Removal and Installation of New Emergency Staircase and Remodelling of the First Floor",deadline:"2026-05-19T17:00:00+03:00",published:"2026-04-28",org:"(Sign in to view)",type:"Parastatal / Services",ref:"TS-230857",country:"Kenya",url:"https://tendersoko.com/tender/proposed-removal-and-installation-of-new-emergency-staircase-and-remodelling-of--230857",keyword:"construction",source:"TenderSoko",loginRequired:true},
+  {title:"Construction of a Boundary Wall, Gate, Waiting Area and Washrooms",deadline:"2026-05-08T17:00:00+03:00",published:"2026-04-28",org:"(Sign in to view — Institution)",type:"Institution / Construction",ref:"TS-230856",country:"Kenya",url:"https://tendersoko.com/tender/proposed-construction-of-a-boundary-wall-gate-waiting-area-and-washrooms-230856",keyword:"construction",source:"TenderSoko",loginRequired:true}
+];
+
+const ALL = [...UNGM,...TED,...GIZ_DATA,...RELIEFWEB,...TENDERSOKO];
+
+// ═══════════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════════
+function daysLeft(iso){if(!iso)return null;return Math.ceil((new Date(iso)-TODAY)/86400000);}
+function urgency(d){if(d===null)return"none";if(d<0)return"expired";if(d===0)return"today";if(d<=2)return"critical";if(d<=5)return"urgent";return"open";}
+function urgLabel(d){if(d===null)return"No Deadline";if(d<0)return"Expired";if(d===0)return"Due Today";if(d===1)return"1 day left";return d+" days";}
+function fmtDate(iso){if(!iso)return"—";return new Date(iso).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});}
+
+function meScore(t){
+  const txt=(t.title+" "+t.keyword+" "+t.type).toLowerCase();
+  const hi=ME_HIGH_KW.filter(k=>txt.includes(k)).length;
+  const md=ME_MED_KW.filter(k=>txt.includes(k)).length;
+  return hi*3+md;
+}
+
+function highlightME(title){
+  let result=title;
+  const allKw=[...ME_HIGH_KW,...ME_MED_KW];
+  allKw.forEach(kw=>{
+    const re=new RegExp('('+kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')',  'gi');
+    result=result.replace(re,'<em class="kw-hl">$1</em>');
+  });
+  return result;
+}
+
+function orgClass(org){
+  if(!org)return"org-default";
+  const m={UNDP:"org-UNDP",UNICEF:"org-UNICEF",WHO:"org-WHO",IOM:"org-IOM",ILO:"org-ILO",
+    UNOPS:"org-UNOPS",UNIDO:"org-UNIDO",IAEA:"org-IAEA","UN-Women":"org-UNWomen",
+    GIZ:"org-GIZ","European Investment Bank":"org-EIB",Enabel:"org-Enabel",
+    "African Risk Capacity":"org-ARC","Expertise France":"org-GIZ"};
+  for(const[k,v]of Object.entries(m)){if(org.includes(k))return v;}
+  return"org-default";
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// FILTERS & POPULATION
+// ═══════════════════════════════════════════════════════════════════════
+function populateFilters(){
+  const countries=[...new Set(ALL.map(t=>t.country))].sort();
+  const keywords=[...new Set(ALL.map(t=>t.keyword))].sort();
+  const fC=document.getElementById("f-country");
+  const fK=document.getElementById("f-keyword");
+  countries.forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;fC.appendChild(o);});
+  keywords.forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=k.charAt(0).toUpperCase()+k.slice(1);fK.appendChild(o);});
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// BUILD CARD
+// ═══════════════════════════════════════════════════════════════════════
+function buildCard(t){
+  const days=daysLeft(t.deadline);
+  const urg=urgency(days);
+  const lbl=urgLabel(days);
+  const score=meScore(t);
+  const meBadge=score>=6?'<span class="me-badge me-high">M&amp;E ⭐</span>':score>=3?'<span class="me-badge me-med">M&amp;E</span>':"";
+
+  const card=document.createElement("div");
+  card.className="card"+(urg==="expired"?" is-expired":"");
+  card.dataset.src=t.source;
+  card.dataset.country=t.country;
+  card.dataset.keyword=t.keyword;
+  card.dataset.status=urg;
+  card.dataset.me=score>=3?"yes":"no";
+  card.dataset.search=(t.title+" "+t.ref+" "+t.country+" "+t.org+" "+t.keyword).toLowerCase();
+
+  const loginNote=t.loginRequired?`<span class="login-note">🔒 org hidden</span>`:"";
+  const orgTxt=t.org&&t.org.length>28?t.org.substring(0,26)+"…":t.org||"—";
+
+  card.innerHTML=`
+    <div class="card-header">
+      <div class="card-title">${meBadge}<a href="${t.url}" target="_blank" rel="noopener">${highlightME(t.title)}</a></div>
+      <span class="urg-pill urg-${urg}">${lbl}</span>
+    </div>
+    <div class="card-body">
+      <div class="meta"><span class="k">Organisation</span>
+        <span class="v"><span class="org-badge ${orgClass(t.org)}">${orgTxt}</span>${loginNote}</span></div>
+      <div class="meta"><span class="k">Country</span><span class="v">${t.country}</span></div>
+      <div class="meta"><span class="k">Notice Type</span><span class="v"><span class="type-tag">${t.type}</span></span></div>
+      <div class="meta"><span class="k">Keyword</span><span class="v"><span class="kw-chip">${t.keyword}</span></span></div>
+      <div class="meta" style="grid-column:1/-1"><span class="k">Reference</span>
+        <span class="v" style="font-size:.71rem;font-weight:400;color:var(--grey-mid)">${t.ref}</span></div>
+    </div>
+    <div class="card-footer">
+      <div>
+        <span class="src-badge src-${t.source}">${t.source}</span>
+        <span class="deadline-text" style="margin-left:5px">${t.deadline?"Deadline: <strong>"+fmtDate(t.deadline)+"</strong>":"<em style='color:var(--grey-mid)'>No deadline set</em>"} &nbsp;·&nbsp; Published ${t.published.substring(0,10)}</span>
+      </div>
+      <a href="${t.url}" target="_blank" rel="noopener" class="btn-link">View ↗</a>
+    </div>`;
+  return card;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// STATE & RENDER
+// ═══════════════════════════════════════════════════════════════════════
+let activeTab="all";
+let renderedCards=[];
+
+function sortTenders(list){
+  return[...list].sort((a,b)=>{
+    const da=daysLeft(a.deadline),db=daysLeft(b.deadline);
+    const order=v=>v===null?50:v<0?99:v===0?0:v<=2?1:v<=5?2:3;
+    const oa=order(da),ob=order(db);
+    if(oa!==ob)return oa-ob;
+    if(da!==null&&db!==null)return da-db;
+    return 0;
+  });
+}
+
+function render(){
+  const sorted=sortTenders(ALL);
+  const container=document.getElementById("cards");
+  container.innerHTML="";
+  renderedCards=[];
+  sorted.forEach(t=>{const c=buildCard(t);container.appendChild(c);renderedCards.push(c);});
+
+  // Stats
+  let urgent=0,open=0;
+  ALL.forEach(t=>{const d=daysLeft(t.deadline),u=urgency(d);if(u==="today"||u==="critical"||u==="urgent")urgent++;if(u==="open")open++;});
+  document.getElementById("st-total").textContent=ALL.length;
+  document.getElementById("st-urgent").textContent=urgent;
+  document.getElementById("st-open").textContent=open;
+  document.getElementById("total-count").textContent=ALL.length;
+
+  // M&E focus count
+  const meCount=ALL.filter(t=>meScore(t)>=3).length;
+  document.getElementById("tc-ME").textContent=meCount;
+
+  applyFilters();
+}
+
+function applyFilters(){
+  const search=document.getElementById("f-search").value.toLowerCase().trim();
+  const country=document.getElementById("f-country").value;
+  const keyword=document.getElementById("f-keyword").value;
+  const status=document.getElementById("f-status").value;
+
+  let visible=0;
+  renderedCards.forEach(card=>{
+    const ds=card.dataset;
+    let show=true;
+    if(activeTab==="ME"){show=ds.me==="yes";}
+    else if(activeTab!=="all"){show=ds.src===activeTab;}
+    if(country&&ds.country!==country)show=false;
+    if(keyword&&ds.keyword!==keyword)show=false;
+    if(status){if(status==="critical")show=show&&(ds.status==="today"||ds.status==="critical");else show=show&&ds.status===status;}
+    if(search&&!ds.search.includes(search))show=false;
+    card.style.display=show?"":"none";
+    if(show)visible++;
+  });
+
+  document.getElementById("count").textContent=visible;
+  const noR=document.getElementById("no-results");
+  const isLocked=activeTab==="AICS"||activeTab==="DevelopmentAid";
+  noR.style.display=(visible===0&&!isLocked)?"block":"none";
+
+  // Notice bars
+  const tsOn=activeTab==="TenderSoko"||activeTab==="all";
+  const rwOn=activeTab==="ReliefWeb"||activeTab==="all";
+  document.getElementById("ts-notice").style.display=tsOn?"flex":"none";
+  document.getElementById("rw-notice").style.display=rwOn?"flex":"none";
+
+  // Locked panels
+  const aicsOn=activeTab==="AICS";
+  const daOn=activeTab==="DevelopmentAid";
+  document.getElementById("aics-panel").style.display=aicsOn?"block":"none";
+  document.getElementById("da-panel").style.display=daOn?"block":"none";
+  document.getElementById("cards").style.display=isLocked?"none":"";
+  document.getElementById("filter-bar").style.display=isLocked?"none":"";
+  document.getElementById("results-bar").style.display=isLocked?"none":"";
+}
+
+function setTab(src,btn){
+  activeTab=src;
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  applyFilters();
+}
+
+function resetFilters(){
+  ["f-search","f-country","f-keyword","f-status"].forEach(id=>document.getElementById(id).value="");
+  applyFilters();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────
+document.querySelectorAll("#f-search,#f-country,#f-keyword,#f-status")
+  .forEach(el=>el.addEventListener("input",applyFilters));
+
+document.getElementById("today-badge").textContent=
+  "Live · "+TODAY.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
+
+populateFilters();
+render();
+</script>
+</body>
+</html>
